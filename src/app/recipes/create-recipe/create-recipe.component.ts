@@ -10,6 +10,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Ingredient } from '../ingredient';
+import { toArray } from 'rxjs';
 
 @Component({
   selector: 'app-create-recipe',
@@ -21,6 +23,7 @@ export class CreateRecipeComponent implements OnInit{
   @Input('id') recipeID?: string; //id de receta recibido desde el componente padre ( opcional )
   mealForm: FormGroup; //declara el formulario reactivo
   rutaActiva: string ='';
+  ingredientsList: Ingredient[] = []; //lista de ingredientes disponibles
 
   constructor(
     private supaService: SupabaseService,
@@ -35,30 +38,54 @@ export class CreateRecipeComponent implements OnInit{
     });
   }
 
+  loadIngredients() {
+    this.supaService.getAllIngredients().subscribe({
+      next: (ingredients) => {
+        this.ingredientsList = ingredients;
+        console.log(this.ingredientsList);
+        
+      },
+      error: (err) => console.log('Error al cargar ingredientes:', err),
+    });
+  }
+  
   ngOnInit(): void {
     this.rutaActiva = this.router.url;
-    
-    if (this.recipeID) { //si recipeID existe
-      // falta demanar tots els ingredients (id, nom)
-      this.supaService.getMeals(this.recipeID).subscribe({ //obtiene los datos de la receta
+  
+    if (this.recipeID) {
+      this.supaService.getMeals(this.recipeID).subscribe({
         next: (meals) => {
-          this.mealForm.reset(meals[0]); //rellena el formulario con los datos de la receta obtenida
-          //itera sobre la lista de ingredientes
-          meals[0].idIngredients.forEach(i=>{
-            if(i){//si el ingrediente tiene un valor valido
-              //nuevo input para el ingrediente
-              (<FormArray>this.mealForm.get('ingredients')).push(
-                this.generateIngredientControl(i)
-             )
-            }
-          })
+          this.mealForm.reset(meals[0]);
+  
+          const ingredientIds = meals[0].idIngredients;
+          if (ingredientIds && ingredientIds.length) {
+            // Limpiar la lista antes de agregar nuevos ingredientes
+            this.ingredientsList = [];
+  
+            // Iterar sobre cada ID de ingrediente y hacer una llamada individual
+            ingredientIds.forEach((id) => {
+              if (id) {
+                this.supaService.getIngredients([id]).subscribe({
+                  next: (ingredient) => {
+                    this.ingredientsList.push(ingredient); // Guardar ingrediente en la lista
+                    (<FormArray>this.mealForm.get('ingredients')).push(
+                      this.generateIngredientControl(id)
+                    );
+                  },
+                  error: (err) => console.log('Error al obtener ingrediente:', err),
+                });
+              }
+            });
+          }
         },
         error: (err) => console.log(err),
-        complete: () => console.log('Received'),
+        complete: () => console.log('Datos de la receta recibidos'),
       });
+    } else {
+      this.loadIngredients();
     }
   }
-
+  
   get strMealValid() { //validacion de strMeal
     return (
       this.mealForm.get('strMeal')?.valid &&
