@@ -53,38 +53,37 @@ export class CreateRecipeComponent implements OnInit{
     this.rutaActiva = this.router.url;
   
     if (this.recipeID) {
+      // Si hay un ID de receta, obtenemos la información de la receta
       this.supaService.getMeals(this.recipeID).subscribe({
         next: (meals) => {
-          this.mealForm.reset(meals[0]);
+          this.mealForm.reset(meals[0]); // Rellenamos el formulario con los datos de la receta
+          const ingredientIds = meals[0].idIngredients; // Lista de IDs de ingredientes
   
-          const ingredientIds = meals[0].idIngredients;
           if (ingredientIds && ingredientIds.length) {
-            // Limpiar la lista antes de agregar nuevos ingredientes
-            this.ingredientsList = [];
-  
-            // Iterar sobre cada ID de ingrediente y hacer una llamada individual
+            // Iteramos sobre los IDs de ingredientes y obtenemos cada uno individualmente
             ingredientIds.forEach((id) => {
               if (id) {
                 this.supaService.getIngredients([id]).subscribe({
                   next: (ingredient) => {
-                    this.ingredientsList.push(ingredient); // Guardar ingrediente en la lista
+                    this.ingredientsList.push(ingredient); // Guardamos en la lista de ingredientes disponibles
+                    // Agregamos un campo 'select' preseleccionado con el ingrediente correspondiente
                     (<FormArray>this.mealForm.get('ingredients')).push(
-                      this.generateIngredientControl(id)
+                      this.generateIngredientControl(ingredient.idIngredient as string) //forzamos a string
                     );
                   },
-                  error: (err) => console.log('Error al obtener ingrediente:', err),
+                  error: (err) => console.log('Error al cargar ingrediente:', err),
                 });
               }
             });
           }
         },
-        error: (err) => console.log(err),
-        complete: () => console.log('Datos de la receta recibidos'),
+        error: (err) => console.log('Error al obtener la receta:', err),
       });
     } else {
-      this.loadIngredients();
+      this.loadIngredients(); // Si no hay receta, cargamos todos los ingredientes disponibles
     }
   }
+  
   
   get strMealValid() { //validacion de strMeal
     return (
