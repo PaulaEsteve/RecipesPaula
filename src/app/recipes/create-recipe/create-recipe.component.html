@@ -49,11 +49,13 @@
         Afegir Ingredient
       </button>
     </div>
-    {{rutaActiva}}
+    <br>
     @if (rutaActiva == "/create_recipe") {
     <button type="submit" class="btn btn-primary">Crear</button>
     }
+    @else {
+      <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+    }
 
   </form>
-  {{ mealForm.value | json }}
 </div>

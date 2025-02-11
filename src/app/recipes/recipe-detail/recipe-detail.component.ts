@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { IRecipe } from '../i-recipe';
 import { SupabaseService } from '../../services/supabase.service';
 import { IngredientComponent } from '../ingredient/ingredient.component';
@@ -7,7 +7,7 @@ import { Ingredient } from '../ingredient';
 
 @Component({
   selector: 'app-recipe-detail',
-  imports: [IngredientComponent],
+  imports: [RouterLink, IngredientComponent],
   templateUrl: './recipe-detail.component.html',
   styleUrl: './recipe-detail.component.css'
 })

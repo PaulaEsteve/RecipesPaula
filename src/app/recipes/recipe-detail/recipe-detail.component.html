@@ -13,6 +13,8 @@
         <p>{{recipe?.strInstructions}}</p>
       </div>
     </div>
+
+    <a [routerLink]="['/edit_recipe',recipe?.idMeal]"  class="btn btn-brand">Edit</a>
   
     <!--Lista de ingredientes -->
     <h3>Ingredients</h3>
