@@ -67,6 +67,11 @@ export class SupabaseService {
       })
     );
   }
+
+  getAllIngredients(): Observable<Ingredient[]> {
+    return this.getDataObservable<Ingredient>('ingredients'); 
+  }
+  
   /*----- -----*/
   /*-----LOGIN-----*/
   login(email: string, password: string) {
