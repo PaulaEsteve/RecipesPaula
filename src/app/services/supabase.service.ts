@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment.development';
-import { BehaviorSubject, from, map, mergeMap, Observable, tap } from 'rxjs';
+import { BehaviorSubject, catchError, from, map, mergeMap, Observable, tap, throwError } from 'rxjs';
 import { IRecipe } from '../recipes/i-recipe';
 import { Ingredient } from '../recipes/ingredient';
 
@@ -37,14 +37,14 @@ export class SupabaseService {
     return data; //retorna una promesa de un array de anys 
   }
 
-  getDataObservable<T>(table: string,search?: Object,ids?: string[],idField?: string): Observable<T[]> {
+  getDataObservable<T>(table: string, search?: Object, ids?: string[], idField?: string): Observable<T[]> {
     //la funcio from converteix de promesa a observable
     return from(this.getData(table, search, ids, idField));
   }
 
   getMeals(search?: string): Observable<IRecipe[]> {//search parametro opcional (?)
     //meals --> nom de la tabla // si te parametro de busqueda retorna un objecte id:numId sino undefined
-    return this.getDataObservable('meals',search ? { idMeal: search } : undefined);
+    return this.getDataObservable('meals', search ? { idMeal: search } : undefined);
     //retorna un observable de un array de IRecipe(interfaz recetas)
   }
 
@@ -69,42 +69,62 @@ export class SupabaseService {
   }
 
   getAllIngredients(): Observable<Ingredient[]> {
-    return this.getDataObservable<Ingredient>('ingredients'); 
+    return this.getDataObservable<Ingredient>('ingredients');
   }
-  
+  /*----- -----*/
+  /*-----UPDATE RECIPES-----*/
+  updateRecipes(idMeal: string,
+    updates: Partial<IRecipe>,): Observable<IRecipe | null> {
+      return from(
+        this.supabase
+          .from('meals')
+          .update(updates)
+          .eq('idMeal', idMeal)
+          .select()
+          .single(),
+      ).pipe(
+        map((response) => {
+          if (response.error) {
+            throw new Error(response.error.message);
+          }
+          return response.data;
+        }),
+        catchError((error) => throwError(() => error)),
+      );
+  }
   /*----- -----*/
   /*-----LOGIN-----*/
   login(email: string, password: string) {
     const loginResult = from(this.supabase.auth.signInWithPassword({
-     email,
-     password
-   })).pipe(
-     map(({ data, error }) => {
-         if (error) {
-           throw error; 
-         }
-         return data;
-       }),
-     tap(()=>this.isLogged()) //accion secundaria para actualizar el estado de inicio de sesión
-   );
- 
-   return loginResult;
-   
-   }
+      email,
+      password
+    })).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          throw error;
+        }
+        return data;
+      }),
+      tap(() => this.isLogged()) //accion secundaria para actualizar el estado de inicio de sesión
+    );
+
+    return loginResult;
+
+  }
 
   loggedSubject = new BehaviorSubject(false);
 
-  async isLogged(){
-      const { data: { user } } = await this.supabase.auth.getUser()
-      if(user){
-        this.loggedSubject.next(true);
-      }
-      else
+  async isLogged() {
+    const { data: { user } } = await this.supabase.auth.getUser()
+    if (user) {
+      this.loggedSubject.next(true);
+    }
+    else
       this.loggedSubject.next(false);
   }
 
-   /*-----LOGOUT-----*/
-   logout() {
+  /*-----LOGOUT-----*/
+  logout() {
     const logoutResult = from(this.supabase.auth.signOut()).pipe(
       map(({ error }) => {
         if (error) {
@@ -118,20 +138,20 @@ export class SupabaseService {
     return logoutResult;
   }
 
-   /*----- -----*/
+  /*----- -----*/
   /*-----REGISTRO-----*/
-  register(email: string, password:string) {
+  register(email: string, password: string) {
     const registerResult = from(this.supabase.auth.signUp({
       email,
       password
     })).pipe(
       map(({ data, error }) => {
-          if (error) {
-            throw error; 
-          }
-          return data;
-        }),
-        tap(()=>this.isLogged()));
+        if (error) {
+          throw error;
+        }
+        return data;
+      }),
+      tap(() => this.isLogged()));
 
     return registerResult;
   }

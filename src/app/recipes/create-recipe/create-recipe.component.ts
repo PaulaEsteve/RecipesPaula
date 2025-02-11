@@ -34,14 +34,14 @@ export class CreateRecipeComponent implements OnInit{
     this.mealForm = this.formBuilder.group({ 
       strMeal: ['', [Validators.required]],
       strInstructions: ['', [Validators.required]],
-      ingredients: this.formBuilder.array([]),
+      idIngredients: this.formBuilder.array([]),
     });
   }
 
   loadIngredients() {
     this.supaService.getAllIngredients().subscribe({
-      next: (ingredients) => {
-        this.ingredientsList = ingredients;
+      next: (idIngredients) => {
+        this.ingredientsList = idIngredients;
         console.log(this.ingredientsList);
         
       },
@@ -68,7 +68,7 @@ export class CreateRecipeComponent implements OnInit{
                   next: (ingredient) => {
                     this.ingredientsList.push(ingredient); // Guardamos en la lista de ingredientes disponibles
                     // Agregamos un campo 'select' preseleccionado con el ingrediente correspondiente
-                    (<FormArray>this.mealForm.get('ingredients')).push(
+                    (<FormArray>this.mealForm.get('idIngredients')).push(
                       this.generateIngredientControl(ingredient.idIngredient as string) //forzamos a string
                     );
                   },
@@ -105,16 +105,44 @@ export class CreateRecipeComponent implements OnInit{
   }
 
   get IngredientsArray(): FormArray { //devuelve el formArray de ingredientes
-    return <FormArray>this.mealForm.get('ingredients');
+    return <FormArray>this.mealForm.get('idIngredients');
   }
 
   addIngredient() { //añade nuevo campo de ingrediente al formulario
-    (<FormArray>this.mealForm.get('ingredients')).push(
+    (<FormArray>this.mealForm.get('idIngredients')).push(
       this.getIngredientControl()
     );
   }
 
   delIngredient(i: number) {   //elimina un campo ingrediente del formulario
-    (<FormArray>this.mealForm.get('ingredients')).removeAt(i);
+    (<FormArray>this.mealForm.get('idIngredients')).removeAt(i);
   }
+
+  submitForm() {
+    if (this.mealForm.invalid) {
+      return;
+    }
+  
+    const mealData = this.mealForm.value;
+    
+    if (this.recipeID) {
+      this.supaService.updateRecipes(this.recipeID, mealData).subscribe({
+        next: () => {
+          console.log('Receta actualizada');
+          this.router.navigate(['/main']);
+        },
+        error: (err) => console.error('Error al actualizar la receta:', err),
+      });
+    }
+    // } else {
+    //   this.supaService.createMeal(mealData).subscribe({
+    //     next: () => {
+    //       console.log('Receta creada');
+    //       this.router.navigate(['/main']);
+    //     },
+    //     error: (err) => console.error('Error al crear la receta:', err),
+    //   });
+    // }
+  }
+  
 }

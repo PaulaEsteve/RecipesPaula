@@ -14,7 +14,7 @@
         formControlName="strInstructions"></textarea>
     </div>
 
-    <div formArrayName="ingredients">
+    <div formArrayName="idIngredients">
       @for (ingredient of IngredientsArray.controls; track $index) {
       <div class="input-group mb-3">
         <!-- Ha de ser un camp selection-->
@@ -54,7 +54,7 @@
     <button type="submit" class="btn btn-primary">Crear</button>
     }
     @else {
-      <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      <button type="submit" class="btn btn-primary" (click)="submitForm()">Guardar Cambios</button>
     }
 
   </form>
