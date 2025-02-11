@@ -51,6 +51,7 @@ export class CreateRecipeComponent implements OnInit{
   
   ngOnInit(): void {
     this.rutaActiva = this.router.url;
+    this.loadIngredients();
   
     if (this.recipeID) {
       // Si hay un ID de receta, obtenemos la información de la receta
@@ -79,8 +80,6 @@ export class CreateRecipeComponent implements OnInit{
         },
         error: (err) => console.log('Error al obtener la receta:', err),
       });
-    } else {
-      this.loadIngredients(); // Si no hay receta, cargamos todos los ingredientes disponibles
     }
   }
   
