@@ -1,0 +1,15 @@
+<div class="container">
+  <form class="d-flex" role="button">
+    <button class="btn btn-info" [routerLink]="['/create_recipe']" 
+      type="button">New Recipe</button>
+  </form>
+ 
+  <div class="row g-4">
+
+    @for (recipe of recipes; track $index) {
+      <div class="col">
+        <app-recipe-card [recipe]="recipe"></app-recipe-card>
+      </div>
+    }
+  </div>
+</div>

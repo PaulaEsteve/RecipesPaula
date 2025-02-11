@@ -1,0 +1,48 @@
+<div class="container">
+    <h1>Register</h1>
+    <form [formGroup]="registerForm">
+        <div class="mb-3">
+            <label for="exampleInputEmail1" class="form-label">Email address</label>
+            <input 
+                type="email" 
+                name="email" 
+                class="form-control" 
+                id="exampleInputEmail1"
+                aria-describedby="emailHelp"
+                formControlName="email"
+                [ngClass]="emailClass"
+            />
+            <!-- emailNotValid retorna true o false (get del component)     [ngClass]="emailNotValid ? 'is-invalid': 'is-valid'"-->
+           
+        </div>
+
+        <div class="mb-3" formGroupName="passwords" [ngClass]="crossPasswordsNotValid ? 'is-invalid' : 'is-valid'">
+            
+            {{registerForm.get('passwords')?.status}}
+            
+            <label for="exampleInputPassword1" class="form-label">Password</label>
+            <input 
+                type="password" 
+                class="form-control" 
+                id="exampleInputPassword1" 
+                name="password"
+                formControlName="password"
+                [ngClass]="password1NotValid"
+            />
+
+            <label for="exampleInputPassword1" class="form-label">Repeat Password</label>
+            <input 
+                type="password" 
+                class="form-control" 
+                id="exampleInputPassword2" 
+                name="password2"
+                formControlName="password2"
+                [ngClass]="password2NotValid"
+            />
+        </div>
+
+        <button type="submit" class="btn btn-primary" (click)="sendRegister()">Register</button>
+
+        
+    </form>
+</div>

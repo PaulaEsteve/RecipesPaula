@@ -1,0 +1,29 @@
+<div class="container">
+  <!-- pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" -->
+    <form #loginForm="ngForm">
+        <div class="mb-3">
+          <label for="exampleInputEmail1" class="form-label">Email address</label>
+          <input type="email" name="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" 
+          [(ngModel)]="email" pattern=".*@.*" #emailInput="ngModel"
+          [ngClass]="{'is-valid': emailInput.touched && emailInput.valid,
+                      'is-invalid': emailInput.touched && !emailInput.valid}" required>
+          @if ( emailInput.touched && !emailInput.valid) {
+            <div
+            class="alert alert-danger">
+            Email requerit en arroba</div>
+          }
+          <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
+        </div>
+        <div class="mb-3">
+          <label for="exampleInputPassword1" class="form-label">Password</label>
+          <input type="password" name="password" [(ngModel)]="password"
+          #passwordInput="ngModel"class="form-control" id="exampleInputPassword1" required>
+        </div>
+        <div class="mb-3 form-check">
+          <input type="checkbox" class="form-check-input" id="exampleCheck1">
+          <label class="form-check-label" for="exampleCheck1">Check me out</label>
+        </div>
+        <button type="submit" class="btn btn-primary" (click)="sendLogin()">Login</button>
+    </form>
+</div>
+
