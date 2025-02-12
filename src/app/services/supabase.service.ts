@@ -75,23 +75,62 @@ export class SupabaseService {
   /*-----UPDATE RECIPES-----*/
   updateRecipes(idMeal: string,
     updates: Partial<IRecipe>,): Observable<IRecipe | null> {
-      return from(
-        this.supabase
-          .from('meals')
-          .update(updates)
-          .eq('idMeal', idMeal)
-          .select()
-          .single(),
-      ).pipe(
-        map((response) => {
-          if (response.error) {
-            throw new Error(response.error.message);
-          }
-          return response.data;
-        }),
-        catchError((error) => throwError(() => error)),
-      );
+    return from(
+      this.supabase
+        .from('meals')
+        .update(updates)
+        .eq('idMeal', idMeal)
+        .select()
+        .single(),
+    ).pipe(
+      map((response) => {
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        return response.data;
+      }),
+      catchError((error) => throwError(() => error)),
+    );
   }
+  /*----- -----*/
+  /*-----CREATE RECIPES-----*/
+  createRecipes(recipe: IRecipe): Observable<IRecipe | null> {
+    return from(
+      this.supabase
+      .from('meals')
+      .insert([recipe])
+      .select()
+      .single()
+    ).pipe(
+      map((response) => {
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        return response.data;
+      }),
+      catchError((error) => throwError(() => error)),
+    );
+  }
+
+  getLastRecipeId(): Observable<number> {
+    return from(
+      this.supabase
+        .from('meals')
+        .select('idMeal')
+        .order('idMeal', { ascending: false })
+        .limit(1)
+    ).pipe(
+      map((response) => {
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        return response.data.length > 0 ? parseInt(response.data[0].idMeal, 10) || 0 : 0;
+      }),
+      catchError((error) => throwError(() => error))
+    );
+  }
+  
+  
   /*----- -----*/
   /*-----LOGIN-----*/
   login(email: string, password: string) {

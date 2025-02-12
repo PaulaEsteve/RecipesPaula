@@ -51,7 +51,7 @@
     </div>
     <br>
     @if (rutaActiva == "/create_recipe") {
-    <button type="submit" class="btn btn-primary">Crear</button>
+    <button type="submit" class="btn btn-primary" (click)="submitForm()">Crear</button>
     }
     @else {
       <button type="submit" class="btn btn-primary" (click)="submitForm()">Guardar Cambios</button>

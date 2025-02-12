@@ -22,7 +22,6 @@ export class RecipeDetailComponent implements OnInit{
   }
 
   ngOnInit(): void {
-    
     this.supabaseService.getMeals(this.recipeID).subscribe({
       next: meals => {
         this.recipe = meals[0];

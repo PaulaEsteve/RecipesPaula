@@ -133,16 +133,23 @@ export class CreateRecipeComponent implements OnInit{
         },
         error: (err) => console.error('Error al actualizar la receta:', err),
       });
+    }else {
+      this.supaService.getLastRecipeId().subscribe({
+        next: (lastId) => {
+          const newId = (lastId + 1).toString(); // Convertimos la nueva ID a string
+          mealData.idMeal = newId; // Asignamos la nueva ID
+  
+          this.supaService.createRecipes(mealData).subscribe({
+            next: () => {
+              console.log('Receta creada con ID:', newId);
+              this.router.navigate(['/main']);
+            },
+            error: (err) => console.error('Error al crear la receta:', err),
+          });
+        },
+        error: (err) => console.error('Error al obtener la última ID:', err),
+      });
     }
-    // } else {
-    //   this.supaService.createMeal(mealData).subscribe({
-    //     next: () => {
-    //       console.log('Receta creada');
-    //       this.router.navigate(['/main']);
-    //     },
-    //     error: (err) => console.error('Error al crear la receta:', err),
-    //   });
-    // }
   }
   
 }
