@@ -4,76 +4,36 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      # 1. Chequear el código del repositorio
+      # Paso 1: Chequear el código del repositorio
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # 2. Configurar Node.js para compilar la app Angular
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
+      # Paso 2: Instalar dependencias en el directorio del proyecto
+      - name: Install dependencies
+        working-directory: RecipesPaula
+        run: npm install
 
-      # 3. Instalar dependencias y compilar la aplicación Angular
-      - name: Install dependencies and build Angular App
+      # Paso 3: Construir el proyecto Angular
+      - name: Build Angular App
+        working-directory: RecipesPaula
+        run: npm run build --base-href='/'
+
+      # Paso 4: Copiar los archivos generados al servidor remoto mediante SCP
+      - name: Copy build to remote server
+        env:
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_PASSWORD: ${{ secrets.REMOTE_PASSWORD }}
         run: |
-          npm install
-          npm run build --base-href='/'
-
-      # 4. Empaquetar (zip) la carpeta de salida del build
-      # Se usará la ruta "dist/recipes-paula" definida en angular.json
-      - name: Zip Angular build artifact
-        run: |
-          cd dist/recipes-paula
-          zip -r ../../angular-app.zip .
-
-      # 5. Subir el artifact para el despliegue
-      - name: Upload artifact for deployment
-        uses: actions/upload-artifact@v4
-        with:
-          name: angular-app
-          path: angular-app.zip
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      # 6. Descargar el artifact generado en el job de build
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: angular-app
-
-      # 7. Descomprimir el artifact
-      - name: Unzip artifact
-        run: unzip angular-app.zip -d angular-app
-
-      # 8. Copiar los archivos compilados al servidor remoto vía SCP
-      - name: Copy files to remote server via SCP
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          password: ${{ secrets.REMOTE_PASSWORD }}
-          port: 22
-          source: "angular-app/*"
-          target: "/home/${{ secrets.REMOTE_USER }}/angular-app/"
-
-      # 9. Conectarse al servidor remoto y reiniciar el contenedor Docker
-      - name: Restart Docker container on remote server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          password: ${{ secrets.REMOTE_PASSWORD }}
-          port: 22
-          script: |
-            docker stop angular-container || true
-            docker rm angular-container || true
-            docker run -d --name angular-container -p 80:80 -v /home/${{ secrets.REMOTE_USER }}/angular-app:/usr/share/nginx/html:ro nginx:latest
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+          echo "Added ${{ secrets.REMOTE_HOST }} to known_hosts."
+          sshpass -p "${REMOTE_PASSWORD}" scp -r RecipesPaula/dist/recipes-paula/* ${REMOTE_USER}@${REMOTE_HOST}:/var/www/html
