@@ -46,7 +46,7 @@ jobs:
         echo "Added ${{ secrets.REMOTE_HOST }} to known_hosts."
 
         # Copiar la carpeta compilada al servidor remoto
-        sshpass -p "${REMOTE_PASSWORD}" scp -r RecipesPaula/dist/myrecipes/browser ${REMOTE_USER}@${REMOTE_HOST}:/home/${REMOTE_USER}/angular-app
+        sshpass -p "${REMOTE_PASSWORD}" scp -r RecipesPaula/dist/recipes-paula ${REMOTE_USER}@${REMOTE_HOST}:/home/${REMOTE_USER}/angular-app
 
         # Conectarse al servidor remoto y ejecutar los comandos Docker
         sshpass -p "${REMOTE_PASSWORD}" ssh ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
@@ -56,5 +56,5 @@ jobs:
 
           # Ejecutar un nuevo contenedor usando la imagen oficial de Nginx
           # Se monta la carpeta con los archivos compilados en el directorio que Nginx sirve (/usr/share/nginx/html)
-          docker run -d --name angular-container -p 80:80 -v /home/${REMOTE_USER}/angular-app:/usr/share/nginx/html:ro nginx:latest
+          docker run -d --name angular-container -p 8080:80 -v /home/${REMOTE_USER}/angular-app:/usr/share/nginx/html:ro nginx:latest
         EOF
