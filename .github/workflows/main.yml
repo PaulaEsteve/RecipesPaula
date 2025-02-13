@@ -1,0 +1,60 @@
+name: Build and Deploy Angular App (sin Dockerfile)
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - RecipesPaula/**  # Se ejecuta solo si hay cambios en esta carpeta
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Paso 2.1: Chequear el código del repositorio
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Paso 2.2: Configurar Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    # Paso 2.3: Instalar dependencias y compilar la aplicación Angular
+    - name: Build Angular App
+      working-directory: RecipesPaula
+      run: |
+        npm install
+        npm run build --base-href=''
+
+    # Paso 2.4: Desplegar en el servidor remoto con Docker (sin Dockerfile)
+    - name: Deploy Angular App without Dockerfile
+      env:
+        REMOTE_USER: ${{ secrets.REMOTE_USER }}
+        REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+        REMOTE_PASSWORD: ${{ secrets.REMOTE_PASSWORD }}
+      run: |
+        # Instalar sshpass para conexiones SSH automatizadas
+        sudo apt-get update
+        sudo apt-get install -y sshpass
+
+        # Agregar el host remoto a known_hosts para evitar prompts
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+        echo "Added ${{ secrets.REMOTE_HOST }} to known_hosts."
+
+        # Copiar la carpeta compilada al servidor remoto
+        sshpass -p "${REMOTE_PASSWORD}" scp -r RecipesPaula/dist/myrecipes/browser ${REMOTE_USER}@${REMOTE_HOST}:/home/${REMOTE_USER}/angular-app
+
+        # Conectarse al servidor remoto y ejecutar los comandos Docker
+        sshpass -p "${REMOTE_PASSWORD}" ssh ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+          # Detener y eliminar el contenedor anterior (si existe)
+          docker stop angular-container || true
+          docker rm angular-container || true
+
+          # Ejecutar un nuevo contenedor usando la imagen oficial de Nginx
+          # Se monta la carpeta con los archivos compilados en el directorio que Nginx sirve (/usr/share/nginx/html)
+          docker run -d --name angular-container -p 80:80 -v /home/${REMOTE_USER}/angular-app:/usr/share/nginx/html:ro nginx:latest
+        EOF
