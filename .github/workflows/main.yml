@@ -21,19 +21,16 @@ jobs:
           node-version: '20'
 
       # 3. Instalar dependencias y compilar la aplicación Angular
-      # Se asume que el package.json y demás se encuentran en RecipesPaula
       - name: Install dependencies and build Angular App
-        working-directory: RecipesPaula
         run: |
           npm install
           npm run build --base-href='/'
 
       # 4. Empaquetar (zip) la carpeta de salida del build
-      # Se usará la ruta "RecipesPaula/dist/recipes-paula"
+      # Se usará la ruta "dist/recipes-paula" definida en angular.json
       - name: Zip Angular build artifact
         run: |
-          cd RecipesPaula/dist/recipes-paula
-          # Se empaquetan los archivos RESULTANTES, colocando el zip en la raíz del repo
+          cd dist/recipes-paula
           zip -r ../../angular-app.zip .
 
       # 5. Subir el artifact para el despliegue
