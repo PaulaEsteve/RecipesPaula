@@ -14,14 +14,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Paso 2: Instalar dependencias en el directorio del proyecto
+      # Paso 2: Instalar dependencias (en la raíz, si package.json está allí)
       - name: Install dependencies
-        working-directory: RecipesPaula
         run: npm install
 
       # Paso 3: Construir el proyecto Angular
       - name: Build Angular App
-        working-directory: RecipesPaula
         run: npm run build --base-href='/'
 
       # Paso 4: Copiar los archivos generados al servidor remoto mediante SCP
@@ -36,4 +34,5 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
           echo "Added ${{ secrets.REMOTE_HOST }} to known_hosts."
-          sshpass -p "${REMOTE_PASSWORD}" scp -r RecipesPaula/dist/recipes-paula/* ${REMOTE_USER}@${REMOTE_HOST}:/var/www/html
+          # Se asume que angular.json define "outputPath": "dist/recipes-paula"
+          sshpass -p "${REMOTE_PASSWORD}" scp -r dist/recipes-paula/* ${REMOTE_USER}@${REMOTE_HOST}:/var/www/html
