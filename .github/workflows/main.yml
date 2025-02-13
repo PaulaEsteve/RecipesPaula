@@ -4,57 +4,79 @@ on:
   push:
     branches:
       - master
-    paths:
-      - RecipesPaula/**  # Se ejecuta solo si hay cambios en esta carpeta
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-    # Paso 2.1: Chequear el código del repositorio
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # 1. Chequear el código del repositorio
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # Paso 2.2: Configurar Node.js
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+      # 2. Configurar Node.js para compilar la app Angular
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
 
-    # Paso 2.3: Instalar dependencias y compilar la aplicación Angular
-    - name: Build Angular App
-      working-directory: RecipesPaula
-      run: |
-        npm install
-        npm run build --base-href=''
+      # 3. Instalar dependencias y compilar la aplicación Angular
+      # Se asume que el package.json y demás se encuentran en RecipesPaula
+      - name: Install dependencies and build Angular App
+        working-directory: RecipesPaula
+        run: |
+          npm install
+          npm run build --base-href='/'
 
-    # Paso 2.4: Desplegar en el servidor remoto con Docker (sin Dockerfile)
-    - name: Deploy Angular App without Dockerfile
-      env:
-        REMOTE_USER: ${{ secrets.REMOTE_USER }}
-        REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-        REMOTE_PASSWORD: ${{ secrets.REMOTE_PASSWORD }}
-      run: |
-        # Instalar sshpass para conexiones SSH automatizadas
-        sudo apt-get update
-        sudo apt-get install -y sshpass
+      # 4. Empaquetar (zip) la carpeta de salida del build
+      # Se usará la ruta "RecipesPaula/dist/recipes-paula"
+      - name: Zip Angular build artifact
+        run: |
+          cd RecipesPaula/dist/recipes-paula
+          # Se empaquetan los archivos RESULTANTES, colocando el zip en la raíz del repo
+          zip -r ../../angular-app.zip .
 
-        # Agregar el host remoto a known_hosts para evitar prompts
-        mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
-        echo "Added ${{ secrets.REMOTE_HOST }} to known_hosts."
+      # 5. Subir el artifact para el despliegue
+      - name: Upload artifact for deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-app
+          path: angular-app.zip
 
-        # Copiar la carpeta compilada al servidor remoto
-        sshpass -p "${REMOTE_PASSWORD}" scp -r RecipesPaula/dist/recipes-paula ${REMOTE_USER}@${REMOTE_HOST}:/home/${REMOTE_USER}/angular-app
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # 6. Descargar el artifact generado en el job de build
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-app
 
-        # Conectarse al servidor remoto y ejecutar los comandos Docker
-        sshpass -p "${REMOTE_PASSWORD}" ssh ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-          # Detener y eliminar el contenedor anterior (si existe)
-          docker stop angular-container || true
-          docker rm angular-container || true
+      # 7. Descomprimir el artifact
+      - name: Unzip artifact
+        run: unzip angular-app.zip -d angular-app
 
-          # Ejecutar un nuevo contenedor usando la imagen oficial de Nginx
-          # Se monta la carpeta con los archivos compilados en el directorio que Nginx sirve (/usr/share/nginx/html)
-          docker run -d --name angular-container -p 8080:80 -v /home/${REMOTE_USER}/angular-app:/usr/share/nginx/html:ro nginx:latest
-        EOF
+      # 8. Copiar los archivos compilados al servidor remoto vía SCP
+      - name: Copy files to remote server via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASSWORD }}
+          port: 22
+          source: "angular-app/*"
+          target: "/home/${{ secrets.REMOTE_USER }}/angular-app/"
+
+      # 9. Conectarse al servidor remoto y reiniciar el contenedor Docker
+      - name: Restart Docker container on remote server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASSWORD }}
+          port: 22
+          script: |
+            docker stop angular-container || true
+            docker rm angular-container || true
+            docker run -d --name angular-container -p 80:80 -v /home/${{ secrets.REMOTE_USER }}/angular-app:/usr/share/nginx/html:ro nginx:latest
